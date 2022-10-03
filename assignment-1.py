@@ -68,6 +68,9 @@ class NaiveBayes:
 
         return y
 
+    def score(self, y):
+        return np.sum(y_pred == y) / len(y)
+
 # Train the model
 model = NaiveBayes()
 model.fit(train_X, train_Y)
@@ -78,3 +81,6 @@ y_pred = model.predict(test_X)
 # Print the output
 print('True output: ', test_Y.values)
 print('Predicted output: ', y_pred)
+
+# Calculate the accuracy of the model
+print('Accuracy: ', model.score(y_pred))
