@@ -8,7 +8,6 @@
 # 7. Predict the output
 # 8. Print the output
 
-from turtle import pos
 import pandas as pd
 import numpy as np
 
@@ -44,7 +43,7 @@ class NaiveBayes:
         self.cond_prob = {}
 
         # Calculate the prior probability of the target column
-        self.prior_prob = train_y.value_counts(normalize=True).to_dict()
+        self.prior_prob = y.value_counts(normalize=True).to_dict()
         
         # Calculate the conditional probability of each feature
         for _, c in enumerate(self.classes):
