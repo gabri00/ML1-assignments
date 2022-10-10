@@ -62,7 +62,7 @@ class NaiveBayes:
         self.prior_prob = self.y.value_counts(normalize=True).to_dict()
         
         # Calculate the conditional probability of each feature
-        for _, c in enumerate(self.classes):
+        for c in self.classes:
             self.cond_prob[c] = {}
             X_c = self.X[self.y==c]
             for col in X_c.columns:
