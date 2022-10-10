@@ -18,8 +18,7 @@ df = pd.read_csv(PATH, delim_whitespace=True)
 TARG_COL = df.columns[-1]
 
 # Set test and training proportions
-TRAIN_SIZE = 10
-TEST_SIZE = 4
+TRAIN_SIZE = 0.7
 
 # Set smoothing parameter
 ALPHA = 1
@@ -31,14 +30,18 @@ def convert_categorical_to_numerical(df):
         df[col] = df[col].map(class_map)
 
 # Split the data into training and testing data
-def split_data(df, train_size=TRAIN_SIZE, test_size=TEST_SIZE, targ_col=TARG_COL):
-    df1 = df.sample(frac=1)
-    train_X = df1.head(train_size)
-    test_X = df1.tail(test_size)
+def split_data(df, train_size=TRAIN_SIZE, targ_col=TARG_COL):
+    train_X = df.sample(frac=train_size)
+    test_X = df.drop(train_X.index)
     test_y = test_X[targ_col]
     # Remove the target column from the testing data
     test_X = test_X.drop(targ_col, axis=1)
     return train_X, test_X, test_y
+
+# Check data split
+def check_data_split(train_X, test_X):
+    if test_X.shape[1] != train_X.shape[1] and test_X.shape[1] != train_X.shape[1] - 1:
+        exit('Data split failed')
 
 # Count unique values in each column
 def count_unique_values(df):
@@ -92,6 +95,7 @@ class NaiveBayes:
 
 convert_categorical_to_numerical(df)
 train_X, test_X, test_y = split_data(df)
+check_data_split(train_X, test_X)
 
 model = NaiveBayes()
 # Train the model
