@@ -4,6 +4,7 @@
 # 2.3. Linear regression one dimensional with intercept on df2
 # 2.4. Multidimensional linear regression on df2 (mpg as target)
 
+from statistics import linear_regression
 import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
@@ -68,18 +69,19 @@ def linear_regression_multidim(df, x_cols, target_col):
       y = df[target_col].values
       X = df[x_cols].values
       # If the matrix is singular and cannot be inverted return a linear regression function that returns 0
-      if X.shape[0] == 1:
+      try:
+         # Calculate the Moore-Penrose pseudo-inverse
+         # X_pinv = np.linalg.pinv(X)
+         X_pinv = np.linalg.inv(X.T @ X) @ X.T
+         # Calculate the weights
+         weights = X_pinv @ y
+         # Return the linear regression function
+         return lambda x: x @ weights
+      except np.linalg.LinAlgError:
          return lambda x: 0
-      # Calculate the Moore-Penrose pseudo-inverse
-      # X_pinv = np.linalg.pinv(X)
-      X_pinv = np.linalg.inv(X.T @ X) @ X.T
-      # Calculate the weights
-      weights = X_pinv @ y
-      # Return the linear regression function
-      return lambda x: x @ weights
 
 # Function to plot the data and the linear regression line
-def plot_linear_regression(df, x_col, y_col, lin_reg, xlabel, ylabel, legend=True):
+def plot_linear_regression(df, x_col, y_col, lin_reg, xlabel, ylabel, title, legend=True):
       # Plot the data
       plt.scatter(df[x_col], df[y_col], marker=DATA_MARKER)
       # Plot the linear regression line
@@ -88,15 +90,15 @@ def plot_linear_regression(df, x_col, y_col, lin_reg, xlabel, ylabel, legend=Tru
 
       if legend:
          plt.legend(['Data', 'Linear regression'])
-      plt.title(f'One dimensional linear regression on {x_col} and {y_col}')
+      plt.title(title)
       plt.xlabel(xlabel)
       plt.ylabel(ylabel)
       plt.show()
 
 # Function to make a n subplots of the linear regression line
-def plot_linear_regression_subplots(df_subsets, x_col, y_col, lin_reg, n, xlabel, ylabel, legend=False):
+def plot_linear_regression_subplots(df_subsets, x_col, y_col, lin_reg, n, xlabel, ylabel, title, legend=False):
    fig, axs = plt.subplots(n // 2, n // 2)
-   fig.suptitle(f'Linear Regression on subsets')
+   fig.suptitle(title)
 
    for i in range(n):
       curr_axs = axs[i // 2, i % 2]
@@ -117,19 +119,20 @@ def plot_linear_regression_subplots(df_subsets, x_col, y_col, lin_reg, n, xlabel
    plt.show()
 
 # Function to plot multiple linear regression lines
-def plot_multiple_linear_regressions(df_subsets, x_col, y_col, lin_reg, n, xlabel, ylabel, legend=False):
+def plot_multiple_linear_regressions(df_subsets, x_col, y_col, lin_reg, n, xlabel, ylabel, title, legend=False):
    c = ['red', 'black', 'brown', 'blue', 'green', 'cyan', 'magenta', 'yellow', 'orange', 'purple']
    for i in range(n):
       curr_subplot = df_subsets[i]
+      linear_regression = lin_reg(curr_subplot, x_col, y_col)
       # Plot the data
       plt.scatter(curr_subplot[x_col], curr_subplot[y_col], marker=DATA_MARKER, color=c[i])
       # Plot the linear regression line
       x = np.linspace(curr_subplot[x_col].min(), curr_subplot[x_col].max(), 100)
-      plt.plot(x, lin_reg(x), color=c[i])
+      plt.plot(x, linear_regression(x), color=c[i])
 
    if legend:
       plt.legend(['Data', 'Linear regression'])
-   plt.title(f'Multiple linear regression in one plot on {x_col} and {y_col}')
+   plt.title(title)
    plt.xlabel(xlabel)
    plt.ylabel(ylabel)
    plt.show()
@@ -178,7 +181,7 @@ LR_COLOR = 'red'
 # 2.1. Linear regression one dimensional without intercept on df1
 lin_reg = linear_regression_one_dim_no_intercept(df1, x_col_df1, y_col_df1)
 # Plot the linear regression line for df1
-plot_linear_regression(df1, x_col_df1, y_col_df1, lin_reg, df1_labels[0], df1_labels[1])
+plot_linear_regression(df1, x_col_df1, y_col_df1, lin_reg, df1_labels[0], df1_labels[1], 'Linear regression without intercept on df1')
 
 
 # 2.2. Compare (plot) the solution obtained on different random subsets (10%)
@@ -195,14 +198,15 @@ plot_linear_regression_subplots(
    linear_regression_one_dim_no_intercept,
    n,
    df1_labels[0],
-   df1_labels[1]
+   df1_labels[1],
+   'Solutions obtained on different random subsets (10%) of df1'
 )
 
 
 # 2.3. Linear regression one dimensional with intercept on df2
 lin_reg = linear_regression_one_dim(df2, x_col_df2, y_col_df2)
 # Plot the linear regression line for df2
-plot_linear_regression(df2, x_col_df2, y_col_df2, lin_reg, df2_labels[0], df2_labels[1])
+plot_linear_regression(df2, x_col_df2, y_col_df2, lin_reg, df2_labels[0], df2_labels[1], 'Linear regression with intercept on df2')
 
 
 # 2.4. Multidimensional linear regression on df2 (mpg as target)
@@ -223,12 +227,12 @@ train_set_df2, test_set_df2 = split_data(df2, p)
 # 3.1. Linear regression one dimensional without intercept on df1 with 5% of the data
 lin_reg_df1 = linear_regression_one_dim_no_intercept(train_set_df1, x_col_df1, y_col_df1)
 # Plot the linear regression line for df1
-plot_linear_regression(train_set_df1, x_col_df1, y_col_df1, lin_reg_df1, df1_labels[0], df1_labels[1])
+plot_linear_regression(train_set_df1, x_col_df1, y_col_df1, lin_reg_df1, df1_labels[0], df1_labels[1], 'Linear regression without intercept on df1 (5% of the data)')
 
 # 3.2. Linear regression one dimensional with intercept on df2 with 5% of the data
 lin_reg_df2 = linear_regression_one_dim(train_set_df2, x_col_df2, y_col_df2)
 # Plot the linear regression line for df2
-plot_linear_regression(train_set_df2, x_col_df2, y_col_df2, lin_reg_df2, df2_labels[0], df2_labels[1])
+plot_linear_regression(train_set_df2, x_col_df2, y_col_df2, lin_reg_df2, df2_labels[0], df2_labels[1], 'Linear regression with intercept on df2 (5% of the data)')
 
 # 3.3. Multidimensional linear regression on df2 (mpg as target) with 5% of the data
 lin_reg_df2_multidim = linear_regression_multidim(train_set_df2, x_cols_df2, y_col_df2)
@@ -270,20 +274,60 @@ for p in percentages:
    df1_sets.append(split_data(df1, p))
    df2_sets.append(split_data(df2, p))
 
-df1_sets = [subset[0] for subset in df1_sets]
-df2_sets = [subset[0] for subset in df2_sets]
+df1_train_sets = [subset[0] for subset in df1_sets]
+df2_train_sets = [subset[0] for subset in df2_sets]
+df1_test_sets = [subset[1] for subset in df1_sets]
+df2_test_sets = [subset[1] for subset in df2_sets]
 
-# Plot all linear regression lines for df1
+# Plot all linear regression lines for df1 train sets
 plot_multiple_linear_regressions(
-   df1_sets,
+   df1_train_sets,
    x_col_df1,
    y_col_df1,
-   linear_regression_one_dim_no_intercept(df1_sets, x_col_df1, y_col_df1),
+   linear_regression_one_dim_no_intercept,
    n,
    df1_labels[0],
-   df1_labels[1]
+   df1_labels[1],
+   f'Linear regression without intercept on {n} different train subsets (random %) of df1'
+)
+
+# Plot all linear regression lines for df1 test sets
+plot_multiple_linear_regressions(
+   df1_test_sets,
+   x_col_df1,
+   y_col_df1,
+   linear_regression_one_dim_no_intercept,
+   n,
+   df1_labels[0],
+   df1_labels[1],
+   f'Linear regression without intercept on {n} different test subsets (random %) of df1'
+)
+
+# Plot all linear regression lines for df2 train sets
+plot_multiple_linear_regressions(
+   df2_train_sets,
+   x_col_df2,
+   y_col_df2,
+   linear_regression_one_dim,
+   n,
+   df2_labels[0],
+   df2_labels[1],
+   f'Linear regression with intercept on {n} different train subsets (random %) of df2'
+)
+
+# Plot all linear regression lines for df2 test sets
+plot_multiple_linear_regressions(
+   df2_test_sets,
+   x_col_df2,
+   y_col_df2,
+   linear_regression_one_dim_no_intercept,
+   n,
+   df2_labels[0],
+   df2_labels[1],
+   f'Linear regression with intercept on {n} different test subsets (random %) of df2'
 )
 
 # In 2.4 do we have to print the points of x?
 # Some times 3.3 fails with a singular matrix error
 # In the last plot of 3.6 the lines overlap each other
+# Clarifications on task 3.6
