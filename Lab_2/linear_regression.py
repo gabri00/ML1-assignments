@@ -1,8 +1,4 @@
 # Linear regression - Lab 2
-# 2.1. Linear regression one dimensional without intercept on df1
-# 2.2. Compare (plot) the solution obtained on different random subsets (10%)
-# 2.3. Linear regression one dimensional with intercept on df2
-# 2.4. Multidimensional linear regression on df2 (mpg as target)
 
 import pandas as pd
 import numpy as np
@@ -38,7 +34,10 @@ def linear_regression_one_dim_no_intercept(df, x_col, y_col):
          num += x * y
          den += x**2
       # Calculate the slope
-      slope = num / den
+      if den == 0:
+         slope = 0
+      else:
+         slope = num / den
       # Return the linear regression function
       return lambda x: slope * x
 
@@ -67,15 +66,14 @@ def linear_regression_one_dim(df, x_col, y_col):
 def linear_regression_multidim(df, x_cols, target_col):
       y = df[target_col].values
       X = df[x_cols].values
-      # If the matrix is singular and cannot be inverted return a linear regression function that returns 0
+      # If the matrix is singular return a linear regression function that returns 0
       try:
          # Calculate the Moore-Penrose pseudo-inverse
-         # X_pinv = np.linalg.pinv(X)
          X_pinv = np.linalg.inv(X.T @ X) @ X.T
          # Calculate the weights
-         weights = X_pinv @ y
+         w = X_pinv @ y
          # Return the linear regression function
-         return lambda x: x @ weights
+         return lambda x: x @ w
       except np.linalg.LinAlgError:
          return lambda x: 0
 
@@ -95,30 +93,27 @@ def plot_linear_regression(df, x_col, y_col, lin_reg, xlabel, ylabel, title, leg
       plt.show()
 
 # Function to make a n subplots of the linear regression line
-def plot_linear_regression_subplots(df_subsets, x_col, y_col, lin_reg, n, xlabel, ylabel, title, legend=False):
+def plot_linear_regression_subplots(df_subsets, x_col, y_col, lin_reg, n, xlabel, ylabel, title):
    fig, axs = plt.subplots(n // 2, n // 2)
    fig.suptitle(title)
 
-   for i in range(n):
-      curr_axs = axs[i // 2, i % 2]
+   for i, ax in enumerate(axs.flat):
       curr_subset = df_subsets[i]
       # Get the linear regression function
       linear_regression = lin_reg(curr_subset, x_col, y_col)
       # Plot the data
-      curr_axs.scatter(curr_subset[x_col], curr_subset[y_col], marker=DATA_MARKER)
+      ax.scatter(curr_subset[x_col], curr_subset[y_col], marker=DATA_MARKER)
       # Plot the linear regression line
       x = np.linspace(curr_subset[x_col].min(), curr_subset[x_col].max(), 100)
-      curr_axs.plot(x, linear_regression(x), color=LR_COLOR)
+      ax.plot(x, linear_regression(x), color=LR_COLOR)
 
-      if legend:
-         curr_axs.legend(['Linear regression', 'Data'])
-      curr_axs.set_xlabel(xlabel)
-      curr_axs.set_ylabel(ylabel)
+      ax.set_xlabel(xlabel)
+      ax.set_ylabel(ylabel)
 
    plt.show()
 
 # Function to plot multiple linear regression lines
-def plot_multiple_linear_regressions(df_subsets, x_col, y_col, lin_reg, n, xlabel, ylabel, title, legend=False):
+def plot_multiple_linear_regressions(df_subsets, x_col, y_col, lin_reg, n, xlabel, ylabel, title):
    c = ['red', 'black', 'brown', 'blue', 'green', 'cyan', 'magenta', 'yellow', 'orange', 'purple']
    for i in range(n):
       curr_subplot = df_subsets[i]
@@ -129,8 +124,6 @@ def plot_multiple_linear_regressions(df_subsets, x_col, y_col, lin_reg, n, xlabe
       x = np.linspace(curr_subplot[x_col].min(), curr_subplot[x_col].max(), 100)
       plt.plot(x, linear_regression(x), color=c[i])
 
-   if legend:
-      plt.legend(['Data', 'Linear regression'])
    plt.title(title)
    plt.xlabel(xlabel)
    plt.ylabel(ylabel)
@@ -257,11 +250,20 @@ mse_test_set_df2 = mean_squared_error(
    linear_regression_one_dim(test_set_df2, x_col_df2, y_col_df2)
 )
 
+# Compute the mean squared error for the test set of df2 (multidimensional)
+# mse_test_set_df2_multidim = mean_squared_error(
+#    test_set_df2,
+#    x_cols_df2,
+#    y_col_df2,
+#    lin_reg_df2_multidim
+# )
+
 # Print the mean squared error for the train and test sets of df1 and df2
 print(f'MSE for the train set of df1: {mse_train_set_df1}')
 print(f'MSE for the test set of df1: {mse_test_set_df1}')
 print(f'MSE for the train set of df2: {mse_train_set_df2}')
 print(f'MSE for the test set of df2: {mse_test_set_df2}')
+# print(f'MSE for the test set of df2 (multidimensional): {mse_test_set_df2_multidim}')
 
 # 3.6. repeat with random n% of the data
 n = 10
@@ -326,5 +328,36 @@ plot_multiple_linear_regressions(
    f'Linear regression with intercept on {n} different test subsets (random %) of df2'
 )
 
-# In 2.4 do we have to print the points of y ?
-# Clarifications on task 3.6
+# Create an histogram of the mean squared error for the train and test sets of df1 and df2
+mse_train_set_df1 = [mean_squared_error(subset, x_col_df1, y_col_df1, linear_regression_one_dim_no_intercept(subset, x_col_df1, y_col_df1)) for subset in df1_train_sets]
+mse_train_set_df2 = [mean_squared_error(subset, x_col_df2, y_col_df2, linear_regression_one_dim(subset, x_col_df2, y_col_df2)) for subset in df2_train_sets]
+mse_test_set_df1 = [mean_squared_error(subset, x_col_df1, y_col_df1, linear_regression_one_dim_no_intercept(subset, x_col_df1, y_col_df1)) for subset in df1_test_sets]
+mse_test_set_df2 = [mean_squared_error(subset, x_col_df2, y_col_df2, linear_regression_one_dim(subset, x_col_df2, y_col_df2)) for subset in df2_test_sets]
+
+# Normalize the mean squared error
+mse_train_set_df1 = [mse / max(mse_train_set_df1) for mse in mse_train_set_df1]
+mse_train_set_df2 = [mse / max(mse_train_set_df2) for mse in mse_train_set_df2]
+mse_test_set_df1 = [mse / max(mse_test_set_df1) for mse in mse_test_set_df1]
+mse_test_set_df2 = [mse / max(mse_test_set_df2) for mse in mse_test_set_df2]
+
+data = [mse_train_set_df1, mse_train_set_df2, mse_test_set_df1, mse_test_set_df2]
+
+fig, axs = plt.subplots(len(data) // 2, len(data) // 2)
+fig.suptitle('Histogram of the MSE for the train and test sets of df1 and df2')
+
+for i, ax in enumerate(axs.flat):
+   ax.hist(data[i], bins=n, edgecolor='black')
+   if i == 0:
+       ax.set_title('MSE for the train set of df1')
+   elif i == 1:
+       ax.set_title('MSE for the train set of df2')
+   elif i == 2:
+       ax.set_title('MSE for the test set of df1')
+   elif i == 3:
+       ax.set_title('MSE for the test set of df2')
+   
+   ax.set_xlabel('MSE (normalized)')
+   ax.set_ylabel('Occurences')
+
+plt.tight_layout()
+plt.show()
