@@ -4,7 +4,6 @@
 # 2.3. Linear regression one dimensional with intercept on df2
 # 2.4. Multidimensional linear regression on df2 (mpg as target)
 
-from statistics import linear_regression
 import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
@@ -327,7 +326,5 @@ plot_multiple_linear_regressions(
    f'Linear regression with intercept on {n} different test subsets (random %) of df2'
 )
 
-# In 2.4 do we have to print the points of x?
-# Some times 3.3 fails with a singular matrix error
-# In the last plot of 3.6 the lines overlap each other
+# In 2.4 do we have to print the points of y ?
 # Clarifications on task 3.6
