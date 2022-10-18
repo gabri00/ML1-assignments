@@ -113,9 +113,11 @@ def plot_linear_regression_subplots(df_subsets, x_col, y_col, lin_reg, n, xlabel
    plt.show()
 
 # Function to plot multiple linear regression lines
-def plot_multiple_linear_regressions(df_subsets, x_col, y_col, lin_reg, n, xlabel, ylabel, title):
-   c = ['red', 'black', 'brown', 'blue', 'green', 'cyan', 'magenta', 'yellow', 'orange', 'purple']
-   for i in range(n):
+def plot_multiple_linear_regressions(df_subsets, x_col, y_col, lin_reg, xlabel, ylabel, title):
+   c = ['red', 'green', 'brown', 'blue', 'black', 'cyan', 'magenta', 'yellow', 'orange', 'purple']
+   lin_regs = []
+
+   for i in range(len(df_subsets)):
       curr_subplot = df_subsets[i]
       linear_regression = lin_reg(curr_subplot, x_col, y_col)
       # Plot the data
@@ -123,10 +125,27 @@ def plot_multiple_linear_regressions(df_subsets, x_col, y_col, lin_reg, n, xlabe
       # Plot the linear regression line
       x = np.linspace(curr_subplot[x_col].min(), curr_subplot[x_col].max(), 100)
       plt.plot(x, linear_regression(x), color=c[i])
+      lin_regs.append(linear_regression)
 
    plt.title(title)
    plt.xlabel(xlabel)
    plt.ylabel(ylabel)
+   plt.show()
+
+   return lin_regs
+
+# Function to plot mean squared errors in histograms
+def mse_histograms(data, title, subtitles, x_label, y_label):
+   fig, axs = plt.subplots(len(data) // 2, len(data) // 2)
+   fig.suptitle(title)
+
+   for i, ax in enumerate(axs.flat):
+      ax.hist(data[i], bins=n, edgecolor='black')
+      ax.set_title(subtitles[i])
+      ax.set_xlabel(x_label)
+      ax.set_ylabel(y_label)
+
+   plt.tight_layout()
    plt.show()
 
 # Function to split the data into training and test sets
@@ -135,7 +154,7 @@ def split_data(df, percentage):
       subset = np.random.permutation(df.shape[0])[:int(round(df.shape[0] * percentage))]
       # Split the data
       train_set = df.iloc[subset]
-      test_set = df.iloc[~subset]
+      test_set = df.drop(train_set.index)
 
       return train_set, test_set
 
@@ -145,6 +164,13 @@ def mean_squared_error(df, x_col, y_col, lin_reg):
    y_pred = df[x_col].apply(lin_reg)
    # Compute the mean squared error
    return np.mean((df[y_col] - y_pred)**2)
+
+# Function to compute the mean squared error (multidimensional)
+def mean_squared_error_multidim(df, x_cols, y_col, lin_reg):
+   # Predict the target
+   y_pred = df[x_cols].apply(lin_reg, axis=1)
+   # Compute the mean squared error
+   return 0.5 * np.linalg.norm(df[y_col] - y_pred)**2
 
 ######### End of helper functions #########
 
@@ -216,56 +242,70 @@ p = 0.05
 train_set_df1, test_set_df1 = split_data(df1, p)
 train_set_df2, test_set_df2 = split_data(df2, p)
 
-# 3.1. Linear regression one dimensional without intercept on df1 with 5% of the data
-lin_reg_df1 = linear_regression_one_dim_no_intercept(train_set_df1, x_col_df1, y_col_df1)
-# Plot the linear regression line for df1
-plot_linear_regression(train_set_df1, x_col_df1, y_col_df1, lin_reg_df1, df1_labels[0], df1_labels[1], 'Linear regression without intercept on df1 (5% of the data)')
-
-# 3.2. Linear regression one dimensional with intercept on df2 with 5% of the data
-lin_reg_df2 = linear_regression_one_dim(train_set_df2, x_col_df2, y_col_df2)
-# Plot the linear regression line for df2
-plot_linear_regression(train_set_df2, x_col_df2, y_col_df2, lin_reg_df2, df2_labels[0], df2_labels[1], 'Linear regression with intercept on df2 (5% of the data)')
-
-# 3.3. Multidimensional linear regression on df2 (mpg as target) with 5% of the data
-lin_reg_df2_multidim = linear_regression_multidim(train_set_df2, x_cols_df2, y_col_df2)
-# Predict and print the mpg for df2
-mpg_predicted = train_set_df2[x_cols_df2].apply(lin_reg_df2_multidim, axis=1)
-print(mpg_predicted)
-
-# 3.4. Compute the mean squared error for the train set of df1 and df2
-mse_train_set_df1 = mean_squared_error(train_set_df1, x_col_df1, y_col_df1, lin_reg_df1)
-mse_train_set_df2 = mean_squared_error(train_set_df2, x_col_df2, y_col_df2, lin_reg_df2)
-
-# 3.5. Compute the mean squared error for the test set of df1 and df2
-mse_test_set_df1 = mean_squared_error(
-   test_set_df1,
+# 3.1. Linear regression one dimensional without intercept on df1 with with train (5%) and test (95%)
+lin_reg_train_df1, lin_reg_test_df1 = plot_multiple_linear_regressions(
+   [train_set_df1, test_set_df1],
    x_col_df1,
    y_col_df1,
-   linear_regression_one_dim_no_intercept(test_set_df1, x_col_df1, y_col_df1)
+   linear_regression_one_dim_no_intercept,
+   df1_labels[0],
+   df1_labels[1],
+   'Linear regression without intercept on train (5%) and test (95%) of df1'
 )
-mse_test_set_df2 = mean_squared_error(
-   test_set_df2,
+
+# 3.2. Linear regression one dimensional with intercept on df2 with train (5%) and test (95%)
+lin_reg_train_df2, lin_reg_test_df2 = plot_multiple_linear_regressions(
+   [train_set_df2, test_set_df2],
    x_col_df2,
    y_col_df2,
-   linear_regression_one_dim(test_set_df2, x_col_df2, y_col_df2)
+   linear_regression_one_dim,
+   df2_labels[0],
+   df2_labels[1],
+   'Linear regression with intercept on train (5%) and test (95%) of df2'
 )
 
-# Compute the mean squared error for the test set of df2 (multidimensional)
-# mse_test_set_df2_multidim = mean_squared_error(
-#    test_set_df2,
-#    x_cols_df2,
-#    y_col_df2,
-#    lin_reg_df2_multidim
-# )
+# 3.3. Multidimensional linear regression on df2 (mpg as target) with with train (5%) and test (95%)
+lin_reg_train_df2_multidim = linear_regression_multidim(train_set_df2, x_cols_df2, y_col_df2)
+lin_reg_test_df2_multidim = linear_regression_multidim(test_set_df2, x_cols_df2, y_col_df2)
+# Predict and print the mpg for df2
+mpg_predicted_train = train_set_df2[x_cols_df2].apply(lin_reg_train_df2_multidim, axis=1)
+mpg_predicted_test = test_set_df2[x_cols_df2].apply(lin_reg_test_df2_multidim, axis=1)
+print(f'mpg predicted train:\n{mpg_predicted_train}')
+print(f'mpg predicted test:\n{mpg_predicted_test}')
+
+# 3.4. Compute the mean squared error for the train set of df1 and df2
+mse_train_set_df1 = mean_squared_error(train_set_df1, x_col_df1, y_col_df1, lin_reg_train_df1)
+mse_train_set_df2 = mean_squared_error(train_set_df2, x_col_df2, y_col_df2, lin_reg_train_df2)
+
+# 3.5. Compute the mean squared error for the test set of df1 and df2
+mse_test_set_df1 = mean_squared_error(test_set_df1, x_col_df1, y_col_df1, lin_reg_test_df1)
+mse_test_set_df2 = mean_squared_error(test_set_df2, x_col_df2, y_col_df2, lin_reg_test_df2)
+
+# Compute the mean squared error for the train and test set of df2 (multidimensional)
+mse_train_set_df2_multidim = mean_squared_error_multidim(
+   train_set_df2,
+   x_cols_df2,
+   y_col_df2,
+   lin_reg_train_df2_multidim)
+
+mse_test_set_df2_multidim = mean_squared_error_multidim(
+   test_set_df2,
+   x_cols_df2,
+   y_col_df2,
+   lin_reg_test_df2_multidim
+)
 
 # Print the mean squared error for the train and test sets of df1 and df2
-print(f'MSE for the train set of df1: {mse_train_set_df1}')
-print(f'MSE for the test set of df1: {mse_test_set_df1}')
-print(f'MSE for the train set of df2: {mse_train_set_df2}')
-print(f'MSE for the test set of df2: {mse_test_set_df2}')
-# print(f'MSE for the test set of df2 (multidimensional): {mse_test_set_df2_multidim}')
+print(f'''
+MSE for the train set of df1: {mse_train_set_df1}
+MSE for the test set of df1: {mse_test_set_df1}
+MSE for the train set of df2: {mse_train_set_df2}
+MSE for the test set of df2: {mse_test_set_df2}
+MSE for the train set of df2 (multidimensional): {mse_train_set_df2_multidim}
+MSE for the test set of df2 (multidimensional): {mse_test_set_df2_multidim}
+''')
 
-# 3.6. repeat with random n% of the data
+# 3.6. repeat n times with random% of the data
 n = 10
 percentages = np.random.permutation(100)[:n] / 100
 df1_sets = []
@@ -281,83 +321,66 @@ df1_test_sets = [subset[1] for subset in df1_sets]
 df2_test_sets = [subset[1] for subset in df2_sets]
 
 # Plot all linear regression lines for df1 train sets
-plot_multiple_linear_regressions(
+lin_reg_train_df1 = plot_multiple_linear_regressions(
    df1_train_sets,
    x_col_df1,
    y_col_df1,
    linear_regression_one_dim_no_intercept,
-   n,
    df1_labels[0],
    df1_labels[1],
    f'Linear regression without intercept on {n} different train subsets (random %) of df1'
 )
 
 # Plot all linear regression lines for df1 test sets
-plot_multiple_linear_regressions(
+lin_reg_test_df1 = plot_multiple_linear_regressions(
    df1_test_sets,
    x_col_df1,
    y_col_df1,
    linear_regression_one_dim_no_intercept,
-   n,
    df1_labels[0],
    df1_labels[1],
    f'Linear regression without intercept on {n} different test subsets (random %) of df1'
 )
 
 # Plot all linear regression lines for df2 train sets
-plot_multiple_linear_regressions(
+lin_reg_train_df2 = plot_multiple_linear_regressions(
    df2_train_sets,
    x_col_df2,
    y_col_df2,
    linear_regression_one_dim,
-   n,
    df2_labels[0],
    df2_labels[1],
    f'Linear regression with intercept on {n} different train subsets (random %) of df2'
 )
 
 # Plot all linear regression lines for df2 test sets
-plot_multiple_linear_regressions(
+lin_reg_test_df2 = plot_multiple_linear_regressions(
    df2_test_sets,
    x_col_df2,
    y_col_df2,
-   linear_regression_one_dim_no_intercept,
-   n,
+   linear_regression_one_dim,
    df2_labels[0],
    df2_labels[1],
    f'Linear regression with intercept on {n} different test subsets (random %) of df2'
 )
 
 # Create an histogram of the mean squared error for the train and test sets of df1 and df2
-mse_train_set_df1 = [mean_squared_error(subset, x_col_df1, y_col_df1, linear_regression_one_dim_no_intercept(subset, x_col_df1, y_col_df1)) for subset in df1_train_sets]
-mse_train_set_df2 = [mean_squared_error(subset, x_col_df2, y_col_df2, linear_regression_one_dim(subset, x_col_df2, y_col_df2)) for subset in df2_train_sets]
-mse_test_set_df1 = [mean_squared_error(subset, x_col_df1, y_col_df1, linear_regression_one_dim_no_intercept(subset, x_col_df1, y_col_df1)) for subset in df1_test_sets]
-mse_test_set_df2 = [mean_squared_error(subset, x_col_df2, y_col_df2, linear_regression_one_dim(subset, x_col_df2, y_col_df2)) for subset in df2_test_sets]
+mse_train_set_df1 = [mean_squared_error(subset, x_col_df1, y_col_df1, lin_reg_train_df1[i]) for i, subset in enumerate(df1_train_sets)]
+mse_train_set_df2 = [mean_squared_error(subset, x_col_df2, y_col_df2, lin_reg_train_df2[i]) for i, subset in enumerate(df2_train_sets)]
+mse_test_set_df1 = [mean_squared_error(subset, x_col_df1, y_col_df1, lin_reg_test_df1[i]) for i, subset in enumerate(df1_test_sets)]
+mse_test_set_df2 = [mean_squared_error(subset, x_col_df2, y_col_df2, lin_reg_test_df2[i]) for i, subset in enumerate(df2_test_sets)]
 
 # Normalize the mean squared error
-mse_train_set_df1 = [mse / max(mse_train_set_df1) for mse in mse_train_set_df1]
-mse_train_set_df2 = [mse / max(mse_train_set_df2) for mse in mse_train_set_df2]
-mse_test_set_df1 = [mse / max(mse_test_set_df1) for mse in mse_test_set_df1]
-mse_test_set_df2 = [mse / max(mse_test_set_df2) for mse in mse_test_set_df2]
+mse_train_set_df1 = [(mse - min(mse_train_set_df1)) / (max(mse_train_set_df1) - min(mse_train_set_df1)) for mse in mse_train_set_df1]
+mse_train_set_df2 = [(mse - min(mse_train_set_df2)) / (max(mse_train_set_df2) - min(mse_train_set_df2)) for mse in mse_train_set_df2]
+mse_test_set_df1 = [(mse - min(mse_test_set_df1)) / (max(mse_test_set_df1) - min(mse_test_set_df1)) for mse in mse_test_set_df1]
+mse_test_set_df2 = [(mse - min(mse_test_set_df2)) / (max(mse_test_set_df2) - min(mse_test_set_df2)) for mse in mse_test_set_df2]
 
-data = [mse_train_set_df1, mse_train_set_df2, mse_test_set_df1, mse_test_set_df2]
-
-fig, axs = plt.subplots(len(data) // 2, len(data) // 2)
-fig.suptitle('Histogram of the MSE for the train and test sets of df1 and df2')
-
-for i, ax in enumerate(axs.flat):
-   ax.hist(data[i], bins=n, edgecolor='black')
-   if i == 0:
-       ax.set_title('MSE for the train set of df1')
-   elif i == 1:
-       ax.set_title('MSE for the train set of df2')
-   elif i == 2:
-       ax.set_title('MSE for the test set of df1')
-   elif i == 3:
-       ax.set_title('MSE for the test set of df2')
-   
-   ax.set_xlabel('MSE (normalized)')
-   ax.set_ylabel('Occurences')
-
-plt.tight_layout()
-plt.show()
+# Plot the mean squared errors
+mse_histograms(
+   [mse_train_set_df1, mse_train_set_df2, mse_test_set_df1, mse_test_set_df2],
+   'Histogram of the mean squared error for the train and test sets of df1 and df2',
+   ['MSE for the train set of df1', 'MSE for the train set of df2', 'MSE for the test set of df1', 'MSE for the test set of df2'],
+   'MSE (normalized)',
+   'Occurences'
+)
