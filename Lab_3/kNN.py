@@ -5,11 +5,15 @@ from tensorflow.keras.datasets import mnist
 # Load mnist dataset
 (x_train, y_train), (x_test, y_test) = mnist.load_data()
 
+# Print the first 10 elements of the training set
+print(x_train[:10])
+print(y_train[:10])
+
 # Build a kNN classifier
 class kNN:
    def __init__(self, train_X, train_y, test_X, k, test_y=None):
       self.x_train = train_X
-      self.y_train = train_y
+      self.y_target = train_y
       self.x_test = test_X
       self.k = k
 
@@ -31,22 +35,30 @@ class kNN:
          raise ValueError("k is not in the correct range!")
 
    def predict(self):
-      y_pred = np.zeros(self.x_test.shape[0])
+      # Select a random query point
+      query_point = np.random.choice(self.x_test.shape[0])
+      print(query_point)
 
-      for i in range(self.x_test.shape[0]):
-            # Calculate the distance between the test image and all training images
-            dist = np.sum(np.abs(self.x_test[i] - self.x_train), axis=1)
-            # Get the k nearest neighbors
-            k_nearest_neighbors = np.argsort(dist)[:self.k]
-            # Convert to 1D array
-            k_nearest_neighbors = k_nearest_neighbors.reshape(-1)
-            # Get the most frequent label
-            y_pred[i] = np.argmax(np.bincount(self.y_train[k_nearest_neighbors]))
+      # Calculate the distance between the query point and all the training points
+      distances = np.sqrt(np.sum((self.x_train - self.x_test[query_point])**2, axis=1))
 
-      return y_pred
+      # Sort the distances and get the indices of the k nearest neighbors
+      k_indices = np.argsort(distances)[:self.k]
 
-knn_classifier = kNN(x_train, y_train, x_test, 5, y_test)
+      # Get the labels of the k nearest neighbors
+      k_labels = self.y_target[k_indices]
+
+      # Get the most common label
+      prediction = np.bincount(k_labels).argmax()
+
+      return prediction
+
+knn_classifier = kNN(x_train[:100], y_train[:100], x_test[:100], 5, y_test[:100])
 print('Predicting...')
 prediction = knn_classifier.predict()
 
-print("Accuracy: ", np.sum(prediction == y_test) / y_test.shape[0])
+# Compute the accuracy on the test set on each digit vs all other digits
+# for i in range(10):
+#    y_test_i = (y_test == i).astype(int)
+#    y_pred_i = (prediction == i).astype(int)
+#    print("Accuracy for digit {}: {}".format(i, np.sum(y_pred_i == y_test_i) / y_test_i.shape[0]))
