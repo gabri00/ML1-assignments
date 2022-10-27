@@ -1,13 +1,18 @@
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
+from collections import Counter
 from tensorflow.keras.datasets import mnist
 
 # Load mnist dataset
 (x_train, y_train), (x_test, y_test) = mnist.load_data()
 
-# Print the first 10 elements of the training set
-print(x_train[:10])
-print(y_train[:10])
+def image_show(i, data, label):
+    x = data[i] # get the vectorized image
+    print('The image label of index %d is %d.' %(i, label[i]))
+    plt.imshow(x, cmap='gray') # show the image
+
+image_show(100, x_train, y_train)
 
 # Build a kNN classifier
 class kNN:
@@ -39,7 +44,7 @@ class kNN:
       query_point = np.random.choice(self.x_test.shape[0])
       print(query_point)
 
-      # Calculate the distance between the query point and all the training points
+      # Calculate the (euclidean) distance between the query point and all the training points
       distances = np.sqrt(np.sum((self.x_train - self.x_test[query_point])**2, axis=1))
 
       # Sort the distances and get the indices of the k nearest neighbors
@@ -48,14 +53,17 @@ class kNN:
       # Get the labels of the k nearest neighbors
       k_labels = self.y_target[k_indices]
 
-      # Get the most common label
-      prediction = np.bincount(k_labels).argmax()
+      # Get the most common label by majority vote
+      prediction = Counter(k_labels).most_common(1)[0][0]
 
       return prediction
 
 knn_classifier = kNN(x_train[:100], y_train[:100], x_test[:100], 5, y_test[:100])
 print('Predicting...')
-prediction = knn_classifier.predict()
+predictions = knn_classifier.predict()
+
+# Print the accuracy of the classifier
+print('Accuracy: ', np.mean(predictions == y_test[:100]))
 
 # Compute the accuracy on the test set on each digit vs all other digits
 # for i in range(10):
