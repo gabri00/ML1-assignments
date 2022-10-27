@@ -1,72 +1,62 @@
-import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 from collections import Counter
 from tensorflow.keras.datasets import mnist
 
 # Load mnist dataset
-(x_train, y_train), (x_test, y_test) = mnist.load_data()
+(train_X, train_y), (test_X, test_y) = mnist.load_data()
 
-def image_show(i, data, label):
-    x = data[i] # get the vectorized image
-    print('The image label of index %d is %d.' %(i, label[i]))
-    plt.imshow(x, cmap='gray') # show the image
+# Create functions for different distance metrics
+def euclidean_distance(x1, x2):
+   return np.sqrt(np.sum((x1 - x2)**2))
 
-image_show(100, x_train, y_train)
+def manhattan_distance(x1, x2):
+   return np.sum(np.abs(x1 - x2))
 
-# Build a kNN classifier
-class kNN:
-   def __init__(self, train_X, train_y, test_X, k, test_y=None):
-      self.x_train = train_X
-      self.y_target = train_y
-      self.x_test = test_X
-      self.k = k
+# Function to check the data
+def check_data(train_X, test_X, k):
+   # Check if the columns of the training and test data are the same
+   if train_X.shape[1] != test_X.shape[1]:
+      raise ValueError("The number of columns in the training and test data is different!")
+   # Check if k is in the correct range
+   if k < 1 or k > train_X.shape[0]:
+      raise ValueError("k is not in the correct range!")
 
-      # If test_y is not None, then use it as the target
-      if test_y is not None:
-         self.y_target = test_y
+# Create function for kNN
+def kNN(train_X, train_y, test_X, k, test_y=None):
+   check_data(train_X, test_X, k)
 
-      self.check_data()
+   # If y_test is not None, use it as the target   
+   test_y = test_y if not None else train_y[:test_X.shape[0]]
+
+   # Calculate the distance between the test points and the training points
+   distances = np.zeros((test_X.shape[0], train_X.shape[0]))
+   for i in range(test_X.shape[0]):
+      for j in range(train_X.shape[0]):
+         distances[i, j] = euclidean_distance(test_X[i], train_X[j])
    
-   def check_data(self):
-      # Check that the number of arguments is correct
-      # if len() != 6:
-      #    raise ValueError("The number of arguments is incorrect!")
-      # Check if the columns of the training and test data are the same
-      if self.x_train.shape[1] != self.x_test.shape[1]:
-         raise ValueError("The number of columns in the training and test data is different!")
-      # Check if k is in the correct range
-      if self.k < 1 or self.k > self.x_train.shape[0]:
-         raise ValueError("k is not in the correct range!")
+   # Find the k nearest neighbors
+   k_neighbors = np.zeros((test_X.shape[0], k))
+   for i in range(test_X.shape[0]):
+      k_neighbors[i] = np.argsort(distances[i])[:k]
+   
+   # Find the most common class in the k nearest neighbors
+   y_pred = np.zeros(test_X.shape[0])
+   for i in range(test_X.shape[0]):
+      y_pred[i] = Counter(train_y[k_neighbors[i].astype(int)]).most_common(1)[0][0]
 
-   def predict(self):
-      # Select a random query point
-      query_point = np.random.choice(self.x_test.shape[0])
-      print(query_point)
+   # Compute and return the error rate
+   return np.sum(y_pred != test_y) / test_y.shape[0]
 
-      # Calculate the (euclidean) distance between the query point and all the training points
-      distances = np.sqrt(np.sum((self.x_train - self.x_test[query_point])**2, axis=1))
 
-      # Sort the distances and get the indices of the k nearest neighbors
-      k_indices = np.argsort(distances)[:self.k]
+# Select the first 100 images from the training set
+train_X = train_X[:1000]
+train_y = train_y[:1000]
 
-      # Get the labels of the k nearest neighbors
-      k_labels = self.y_target[k_indices]
+# Select the first 10 images from the test set
+test_X = test_X[:100]
+test_y = test_y[:100]
 
-      # Get the most common label by majority vote
-      prediction = Counter(k_labels).most_common(1)[0][0]
-
-      return prediction
-
-knn_classifier = kNN(x_train[:100], y_train[:100], x_test[:100], 5, y_test[:100])
-print('Predicting...')
-predictions = knn_classifier.predict()
-
-# Print the accuracy of the classifier
-print('Accuracy: ', np.mean(predictions == y_test[:100]))
-
-# Compute the accuracy on the test set on each digit vs all other digits
-# for i in range(10):
-#    y_test_i = (y_test == i).astype(int)
-#    y_pred_i = (prediction == i).astype(int)
-#    print("Accuracy for digit {}: {}".format(i, np.sum(y_pred_i == y_test_i) / y_test_i.shape[0]))
+# Predict the labels of the test set for k = 1,2,3,4,5,10,15,20,30,40,50
+for k in [1,2,3,4,5,10,15,20,30,40,50]:
+   error_rate = kNN(train_X, train_y, test_X, k, test_y)
+   print("k = {}, error rate = {}%".format(k, error_rate*100))
