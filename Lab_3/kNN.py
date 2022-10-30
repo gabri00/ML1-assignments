@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 from collections import Counter
 from tensorflow.keras.datasets import mnist
 
@@ -48,15 +49,33 @@ def kNN(train_X, train_y, test_X, k, test_y=None):
    return np.sum(y_pred != test_y) / test_y.shape[0]
 
 
-# Select the first 100 images from the training set
-train_X = train_X[:1000]
-train_y = train_y[:1000]
+# Select 10000 samples from the dataset
+train_X = train_X[:5000]
+train_y = train_y[:5000]
 
-# Select the first 10 images from the test set
-test_X = test_X[:100]
-test_y = test_y[:100]
+# Predict one digit from the test set
+error_rates = []
+for i in range(10):
+   test_X_i = test_X[test_y == i][:50]
+   test_y_i = test_y[test_y == i][:50]
+   error_rates.append(kNN(train_X, train_y, test_X_i, 3, test_y_i))
+   print(f'Digit #{i} predicted with error {error_rates[i]*100}%')
+
+# Plot the error rates
+plt.plot(range(10), error_rates)
+plt.xlabel("Digit")
+plt.ylabel("Error rate")
+plt.show()
 
 # Predict the labels of the test set for k = 1,2,3,4,5,10,15,20,30,40,50
-for k in [1,2,3,4,5,10,15,20,30,40,50]:
-   error_rate = kNN(train_X, train_y, test_X, k, test_y)
-   print("k = {}, error rate = {}%".format(k, error_rate*100))
+# k = [1, 2, 3, 4, 5, 10, 15, 20, 30, 40, 50]
+# error_rate = [kNN(train_X, train_y, test_X, k_i, test_y) for k_i in k]
+
+# for k_i, e in zip(k, error_rate):
+#    print("k = {}, error rate = {}%".format(k_i, e*100))
+
+# Make a graph of the error rate for different values of k
+# plt.plot(k, error_rate)
+# plt.xlabel("k")
+# plt.ylabel("Error rate")
+# plt.show()
