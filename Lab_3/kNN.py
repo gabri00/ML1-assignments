@@ -49,33 +49,25 @@ def kNN(train_X, train_y, test_X, k, test_y=None):
    return np.sum(y_pred != test_y) / test_y.shape[0]
 
 
-# Select 10000 samples from the dataset
-train_X = train_X[:5000]
-train_y = train_y[:5000]
+# Select samples from the dataset
+train_X = train_X[100:500]
+train_y = train_y[100:500]
 
 # Predict one digit from the test set
-error_rates = []
+error_rates = {}
+k = [1, 2, 3, 4, 5, 10, 15, 20, 30, 40, 50]
+
 for i in range(10):
-   test_X_i = test_X[test_y == i][:50]
-   test_y_i = test_y[test_y == i][:50]
-   error_rates.append(kNN(train_X, train_y, test_X_i, 3, test_y_i))
-   print(f'Digit #{i} predicted with error {error_rates[i]*100}%')
+   test_X_i = test_X[test_y == i][100:120]
+   test_y_i = test_y[test_y == i][100:120]
+   error_rates[i] = []
+   for k_i in k:
+      error_rates[i].append(kNN(train_X, train_y, test_X_i, k_i, test_y_i))
 
-# Plot the error rates
-plt.plot(range(10), error_rates)
-plt.xlabel("Digit")
-plt.ylabel("Error rate")
+# Plot the error rate for each digit and each k
+for i in range(10):
+   plt.plot(k, error_rates[i], label=f'Digit {i}')
+plt.xlabel('k')
+plt.ylabel('Error rate')
+plt.legend()
 plt.show()
-
-# Predict the labels of the test set for k = 1,2,3,4,5,10,15,20,30,40,50
-# k = [1, 2, 3, 4, 5, 10, 15, 20, 30, 40, 50]
-# error_rate = [kNN(train_X, train_y, test_X, k_i, test_y) for k_i in k]
-
-# for k_i, e in zip(k, error_rate):
-#    print("k = {}, error rate = {}%".format(k_i, e*100))
-
-# Make a graph of the error rate for different values of k
-# plt.plot(k, error_rate)
-# plt.xlabel("k")
-# plt.ylabel("Error rate")
-# plt.show()
