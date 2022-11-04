@@ -26,9 +26,6 @@ def check_data(train_X, test_X, k):
 def kNN(train_X, train_y, test_X, k, test_y=None):
    check_data(train_X, test_X, k)
 
-   # If y_test is not None, use it as the target   
-   test_y = test_y if not None else train_y[:test_X.shape[0]]
-
    # Calculate the distance between the test points and the training points
    distances = np.zeros((test_X.shape[0], train_X.shape[0]))
    for i in range(test_X.shape[0]):
@@ -39,35 +36,40 @@ def kNN(train_X, train_y, test_X, k, test_y=None):
    k_neighbors = np.zeros((test_X.shape[0], k))
    for i in range(test_X.shape[0]):
       k_neighbors[i] = np.argsort(distances[i])[:k]
-   
+
    # Find the most common class in the k nearest neighbors
    y_pred = np.zeros(test_X.shape[0])
    for i in range(test_X.shape[0]):
       y_pred[i] = Counter(train_y[k_neighbors[i].astype(int)]).most_common(1)[0][0]
 
-   # Compute and return the error rate
-   return np.sum(y_pred != test_y) / test_y.shape[0]
+   # Compute and return the error rate if test_y is given
+   if test_y is not None:
+      return y_pred, np.sum(y_pred != test_y) / test_X.shape[0]
+   else:
+      return y_pred
 
 
-# Select samples from the dataset
-train_X = train_X[100:500]
-train_y = train_y[100:500]
+# Select a random subset of the training data of size 1000
+idx = np.random.permutation(train_X.shape[0])[:100]
+train_X = train_X[idx]
+train_y = train_y[idx]
 
-# Predict one digit from the test set
-error_rates = {}
+# Predict each digit from the test set for every k and calculate the accuracy
+accuracies = {}
 k = [1, 2, 3, 4, 5, 10, 15, 20, 30, 40, 50]
 
 for i in range(10):
-   test_X_i = test_X[test_y == i][100:120]
-   test_y_i = test_y[test_y == i][100:120]
-   error_rates[i] = []
+   # Print the progress
+   test_X_i = test_X[test_y == i][:50]
+   test_y_i = test_y[test_y == i][:50]
+   accuracies[i] = []
    for k_i in k:
-      error_rates[i].append(kNN(train_X, train_y, test_X_i, k_i, test_y_i))
+      accuracies[i].append((1 - kNN(train_X, train_y, test_X_i, k_i, test_y_i)[1])*100)
 
 # Plot the error rate for each digit and each k
 for i in range(10):
-   plt.plot(k, error_rates[i], label=f'Digit {i}')
+   plt.plot(k, accuracies[i], label=f'Digit {i}')
 plt.xlabel('k')
-plt.ylabel('Error rate')
+plt.ylabel('Accuracy (%)')
 plt.legend()
 plt.show()
