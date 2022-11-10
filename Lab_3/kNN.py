@@ -52,20 +52,20 @@ def kNN(train_X, train_y, test_X, k, test_y=None):
       return y_pred.astype(int)
 
 
-# Select a random subset of the training data to reduce the computation time
-idx = np.random.permutation(train_X.shape[0])[:4000]
+# Select a random subset (5%) of the training data to reduce the computation time
+idx = np.random.permutation(train_X.shape[0])[:int(round(test_X.shape[0] * 0.05))]
 train_X = train_X[idx]
 train_y = train_y[idx]
 
 # Classify 5% of the test data with k=5 (test_y is not given)
 idx = np.random.permutation(test_X.shape[0])[:int(round(test_X.shape[0] * 0.05))]
 
-prediction = kNN(train_X, train_y, test_X[idx], 5)
-print("Error rate: ", np.sum(prediction != test_y[idx]) / len(prediction))
+# prediction = kNN(train_X, train_y, test_X[idx], 5)
+# print("Error rate: ", np.sum(prediction != test_y[idx]) / len(prediction))
 
 # Classify 5% of the test data with k=5 (test_y is given)
-_, error_rate = kNN(train_X, train_y, test_X[idx], 5, test_y[idx])
-print("Error rate: ", error_rate)
+# _, error_rate = kNN(train_X, train_y, test_X[idx], 5, test_y[idx])
+# print("Error rate: ", error_rate)
 
 
 ### Task 3 & Addendum ###
@@ -74,43 +74,40 @@ print("Error rate: ", error_rate)
 def confusion_matrix(y_true, y_pred):
    # Create a confusion matrix
    cm = np.zeros((2, 2))
-   cm[0] = 0
 
    for i in range(len(y_true)):
-      if y_true[i] == y_pred[i]:
-         cm[1][1] += 1
-      else:
-         cm[1][0] += 1
+      cm[1][int(y_true[i] == y_pred[i])] += 1
+
    return cm
 
 classes = np.unique(test_y)
-accuracies = []
 k = [1, 2, 3, 4, 5, 10, 15, 20, 30, 40, 50]
+accuracies = []
+# 2x2 confusion matrix for each class and each k
 confusion_matrices = np.zeros((len(classes), len(k), 2, 2))
 
 # Predict each digit from the test set for every k and calculate the accuracy
 for i in range(len(classes)):
    test_X_i = test_X[test_y == i]
    test_y_i = test_y[test_y == i]
-   idx = np.random.permutation(test_X_i.shape[0])[:int(round(test_X_i.shape[0] * 0.1))]
    # Select a random 10% of test data to reduce the computation time
+   idx = np.random.permutation(test_X_i.shape[0])[:int(round(test_X_i.shape[0] * 0.1))]
    test_X_i = test_X_i[idx]
    test_y_i = test_y_i[idx]
 
    accuracies.append([])
    for j in range(len(k)):
       y_pred, err_rate = kNN(train_X, train_y, test_X_i, k[j], test_y_i)
-      accuracies[i].append((1 - err_rate)*100)
+      accuracies[i].append((1 - err_rate))
       confusion_matrices[i][j] = confusion_matrix(test_y_i, y_pred)
 
    # Plot the error rate for each digit and each k
    plt.plot(k, accuracies[i], label=f'Digit {i}')
-
    # Print the progress
    print("Progress: ", i + 1, "/ 10")
 
 plt.xlabel('k')
-plt.ylabel('Accuracy (%)')
+plt.ylabel('Accuracy')
 plt.legend()
 plt.show()
 
@@ -123,9 +120,35 @@ for i in range(len(classes)):
       sensitivity[i][j] = confusion_matrices[i][j][1][1] / (confusion_matrices[i][j][1][1] + confusion_matrices[i][j][1][0])
       f1_score[i][j] = 2 * sensitivity[i][j] / (sensitivity[i][j] + 1)
 
-# Calculate the average sensitivity and F1 score for each k
-avg_sensitivity = np.zeros(len(k))
-avg_f1_score = np.zeros(len(k))
-for i in range(len(k)):
-   avg_sensitivity[i] = np.mean(sensitivity[:, i])
-   avg_f1_score[i] = np.mean(f1_score[:, i])
+# Plot the sensitivity and F1 score for each digit and each k
+for i in range(len(classes)):
+   plt.plot(k, sensitivity[i], label=f'Digit {i}')
+plt.xlabel('k')
+plt.ylabel('Sensitivity')
+plt.legend()
+plt.show()
+
+for i in range(len(classes)):
+   plt.plot(k, f1_score[i], label=f'Digit {i}')
+plt.xlabel('k')
+plt.ylabel('F1 score')
+plt.legend()
+plt.show()
+
+# Calculate the average sensitivity and F1 score for each digit
+avg_sensitivity = np.zeros(len(classes))
+avg_f1_score = np.zeros(len(classes))
+for i in range(len(classes)):
+   avg_sensitivity[i] = np.mean(sensitivity[i])
+   avg_f1_score[i] = np.mean(f1_score[i])
+
+# Plot the average sensitivity and F1 score for each digit in a subplot
+fig, (ax1, ax2) = plt.subplots(1, 2)
+fig.suptitle('Average sensitivity and F1 score for each digit')
+ax1.bar(classes, avg_sensitivity)
+ax1.set_xlabel('Digit')
+ax1.set_ylabel('Average sensitivity')
+ax2.bar(classes, avg_f1_score)
+ax2.set_xlabel('Digit')
+ax2.set_ylabel('Average F1 score')
+plt.show()
