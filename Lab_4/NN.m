@@ -1,27 +1,40 @@
-[wine_input, wine_target] = loadDataset('wine.data', 1, true);
+clear
+clc
 
-% Set input and target of the NN
-x = wine_input;
-t = wine_target_new;
-% 
-% trainFcn = 'trainscg';
-% 
-% hiddenLayerSize = 10;
-% net = patternnet(hiddenLayerSize, trainFcn);
-% 
-% net.divideParam.trainRatio = 70/100;
-% net.divideParam.valRatio = 15/100;
-% net.divideParam.testRatio = 15/100;
-% 
-% [net,tr] = train(net,x,t);
-% 
-% y = net(x);
-% e = gsubtract(t,y);
-% performance = perform(net,t,y)
-% tind = vec2ind(t);
-% yind = vec2ind(y);
-% percentErrors = sum(tind ~= yind)/numel(tind);
-% 
-% view(net)
-% 
-% figure, plotconfusion(t,y)
+addpath('mnist\');
+addpath('plot\');
+
+p = 0.05;
+classes = [
+    1, 8;
+    3, 8;
+    1, 7;
+    5, 6
+];
+
+for i = 1:size(classes, 1)
+    [X_a, T_a] = loadMNIST(0, classes(i, 1));
+    [X_b, T_b] = loadMNIST(0, classes(i, 2));
+
+    % Shuffle sets
+    subset_size = floor(size(X_a, 1)*p);
+    idx_a = randperm(size(X_a, 1), subset_size);
+    idx_b = randperm(size(X_b, 1), subset_size);
+
+    dataset = [
+        X_a(idx_a, :);
+        X_b(idx_b, :)
+    ];
+
+    % Train autoencoder
+    autoEncoder = trainAutoencoder(dataset', 2);
+    encoded_data = encode(autoEncoder, dataset');
+
+    % Plot data
+    figure
+    plotcl(encoded_data', [T_a(1:subset_size); T_b(1:subset_size)]);
+    legend(['Class ', num2str(T_a(1))], ['Class ', num2str(T_b(1))]);
+    xlabel('Hidden unit 1');
+    ylabel('Hidden unit 2');
+    title(['Autoencoder classes ', num2str(classes(i, 1)), ' and ', num2str(classes(i, 2))]);
+end
